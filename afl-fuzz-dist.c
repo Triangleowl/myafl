@@ -4552,7 +4552,8 @@ static u8 new_edge_trim_case(char** argv, struct queue_entry* q, u8* in_buf) {
     while (remove_pos < q->len) {
 
       u32 trim_avail = MIN(remove_len, q->len - remove_pos);
-      //u32 cksum;
+      /* ～～～每次循环结束之后要重新对tmp_edge赋值， 否则tmp_edge的值在第一次循环结束就已经成了nullptr ～～～ */
+      tmp_edge = q->new_edges;
 
       write_with_gap(in_buf, q->len, remove_pos, trim_avail);
 
