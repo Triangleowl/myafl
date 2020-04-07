@@ -4050,7 +4050,7 @@ static void show_stats(void) {
 
   sprintf(tmp + banner_pad, "%s " cLCY VERSION cLGN
           " (%s)",  crash_mode ? cPIN "peruvian were-rabbit" : 
-          cYEL "triangleowl 2.0", use_banner);
+          cYEL "owl-undist 2.0", use_banner);
 
   SAYF("\n%s\n\n", tmp);
 
