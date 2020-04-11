@@ -4797,7 +4797,7 @@ void find_new_edges(u8 *orig_virgin) {
 
 /* 0~0~0~0 */
 EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_type) {
-  static u32 pre_cksum;
+  //static u32 pre_cksum;
   static u32 cur_cksum;
   u8 fault;
   //u32 pre_vir_cksum;
@@ -4852,7 +4852,15 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
   queued_discovered += save_if_interesting(argv, out_buf, len, fault);
   cur_cksum = hash32(trace_bits, MAP_SIZE, HASH_CONST);
   /* 0~0~0~0 */
-  if (queue_cur->exec_cksum != cur_cksum && pre_cksum != cur_cksum) {
+  if (queue_cur->exec_cksum != cur_cksum) {
+    struct new_edges *tmp = NULL;
+    if (queue_cur->new_edges) {
+      tmp = queue_cur->new_edges;
+      while (tmp) {
+        if (!trace_bits[tmp->new_edge]) break;
+      }
+    }
+      if ( queue_cur && tmp == NULL ) {
     switch(mutate_type) {
       case STAGE_FLIP1 :
       case STAGE_FLIP2 :
@@ -4918,10 +4926,10 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
         break;
 
       default: break;
+      }
     }
   }
-
-  pre_cksum = cur_cksum;
+  
   /* 0~0~0~0 */
 
   /* 0~0~0~0 */
@@ -6533,7 +6541,7 @@ havoc_stage:
           /* 0~0~0~0 */
           ran_pos = UR(temp_len << 3);
           //if ( !(queue_cur->useful_byte[ran_pos >> 3] & 0x01) && UR(100) > 50) break; // 50% skip
-          if (!(queue_cur->useful_byte[ran_pos >> 3]) && UR(100) > 50) break; // 50% skip
+          if ( queue_cur->useful_byte[ran_pos >> 3] ) break; // 50% skip
 
           FLIP_BIT(out_buf, ran_pos);
 
@@ -6546,7 +6554,7 @@ havoc_stage:
           /* Set byte to interesting value. */
           /* 0~0~0~0 */
           ran_pos = UR(temp_len);
-          if(!(queue_cur->useful_byte[temp_len]) && UR(100) > 50) break; // 50% skip
+          if( queue_cur->useful_byte[temp_len] ) break; // 50% skip
 
           out_buf[ran_pos] = interesting_8[UR(sizeof(interesting_8))];
 
@@ -6561,7 +6569,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( !(queue_cur->useful_byte[ran_pos]) && !(queue_cur->useful_byte[ran_pos + 1]) && UR(100) > 50) break; //50% skip
+          if( queue_cur->useful_byte[ran_pos] || (queue_cur->useful_byte[ran_pos + 1]) ) break; //50% skip
 
           if (UR(2)) {
 
@@ -6584,7 +6592,7 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( !(queue_cur->useful_byte[ran_pos]) && !(queue_cur->useful_byte[ran_pos + 1]) && !(queue_cur->useful_byte[ran_pos + 2]) && !(queue_cur->useful_byte[ran_pos + 3]) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
 
           if (UR(2)) {
   
@@ -6604,7 +6612,7 @@ havoc_stage:
 
           /* Randomly subtract from byte. */
           ran_pos = UR(temp_len);
-          if( !(queue_cur->useful_byte[ran_pos]) && UR(100) > 50) break;
+          if(  queue_cur->useful_byte[ran_pos] ) break;
 
           out_buf[ran_pos] -= 1 + UR(ARITH_MAX);
           break;
@@ -6613,7 +6621,7 @@ havoc_stage:
 
           /* Randomly add to byte. */
           ran_pos = UR(temp_len);
-          if( !(queue_cur->useful_byte[ran_pos]) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] ) break;
 
           out_buf[ran_pos] += 1 + UR(ARITH_MAX);
           break;
@@ -6624,7 +6632,7 @@ havoc_stage:
 
           if (temp_len < 2) break;
           ran_pos = UR(temp_len - 1);
-          if( !(queue_cur->useful_byte[ran_pos]) && !(queue_cur->useful_byte[ran_pos + 1]) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break;
 
           if (UR(2)) {
 
@@ -6651,7 +6659,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( !(queue_cur->useful_byte[ran_pos]) && !(queue_cur->useful_byte[ran_pos + 1]) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break;
 
           if (UR(2)) {
 
@@ -6678,7 +6686,7 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( !(queue_cur->useful_byte[ran_pos]) && !(queue_cur->useful_byte[ran_pos + 1]) && !(queue_cur->useful_byte[ran_pos + 2]) && !(queue_cur->useful_byte[ran_pos + 3]) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
 
           if (UR(2)) {
 
@@ -6705,7 +6713,7 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( !(queue_cur->useful_byte[ran_pos]) && !(queue_cur->useful_byte[ran_pos + 1]) && !(queue_cur->useful_byte[ran_pos + 2]) && !(queue_cur->useful_byte[ran_pos + 3]) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
 
           if (UR(2)) {
 
@@ -6730,8 +6738,9 @@ havoc_stage:
           /* Just set a random byte to a random value. Because,
              why not. We use XOR with 1-255 to eliminate the
              possibility of a no-op. */
-
-          out_buf[UR(temp_len)] ^= 1 + UR(255);
+          ran_pos = UR(temp_len);
+          if ( queue_cur->useful_byte[ran_pos] ) break;
+          out_buf[UR(ran_pos)] ^= 1 + UR(255);
           break;       
         }
     }
