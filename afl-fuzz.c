@@ -4797,7 +4797,7 @@ void find_new_edges(u8 *orig_virgin) {
 
 /* 0~0~0~0 */
 EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_type) {
-  static u32 pre_cksum;
+  //static u32 pre_cksum;
   static u32 cur_cksum;
   u8 fault;
   //u32 pre_vir_cksum;
@@ -4852,6 +4852,7 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
   queued_discovered += save_if_interesting(argv, out_buf, len, fault);
   cur_cksum = hash32(trace_bits, MAP_SIZE, HASH_CONST);
   /* 0~0~0~0 */
+  /*
   if (queue_cur->exec_cksum != cur_cksum && pre_cksum != cur_cksum) {
     switch(mutate_type) {
       case STAGE_FLIP1 :
@@ -4920,16 +4921,102 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
       default: break;
     }
   }
-
   pre_cksum = cur_cksum;
+  */
   /* 0~0~0~0 */
+  /* 判断是仍然能命中 new_edge, 如果变异后的checksum 和变异前的checksum不同，
+    则判断变异前的测试用例的new_edges是否为空，如果不为空则判断变异后的测试用例仍然
+    能够命中变异前的测试用例的全部new_edge */
+  if (cur_cksum != queue_cur->exec_cksum) {
+    struct new_edges *tmp = NULL;
+    if (queue_cur->new_edges) {
+      tmp = queue_cur->new_edges;
+      /* 遍历链表，查看是否命中所有的new_edge */
+      while (tmp) {
+        if (trace_bits[tmp->new_edge]) {
+          tmp = tmp->next;
+        }
+        else 
+          break;
+      }
+    }
+    /* 如果没有命中所有的new_edge，则证明不能做此变异
+    */
+    if (tmp != NULL && queue_cur->new_edges != NULL) {
+      switch(mutate_type) {
+      case STAGE_FLIP1 :
+      case STAGE_FLIP2 :
+      case STAGE_FLIP4 :
+      case STAGE_FLIP8 :
+        queue_cur->useful_byte[stage_cur_byte] |= 0x01;
+        break;
 
-  /* 0~0~0~0 */
+      case STAGE_FLIP16:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x01;
+        queue_cur->useful_byte[stage_cur_byte + 1] |= 0x01;
+        break;
+
+      case STAGE_FLIP32:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x01;
+        queue_cur->useful_byte[stage_cur_byte +1] |= 0x01;
+        queue_cur->useful_byte[stage_cur_byte +2] |= 0x01;
+        queue_cur->useful_byte[stage_cur_byte +3] |= 0x01;
+        break;
+      
+      case STAGE_ARITH8 :
+        queue_cur->useful_byte[stage_cur_byte] |= 0x02;
+        break;
+
+      case STAGE_ARITH16:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x02;
+        queue_cur->useful_byte[stage_cur_byte + 1] |= 0x02;
+        break;
+
+      case STAGE_ARITH32:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x02;
+        queue_cur->useful_byte[stage_cur_byte + 1] |= 0x02;
+        queue_cur->useful_byte[stage_cur_byte + 2] |= 0x02;
+        queue_cur->useful_byte[stage_cur_byte + 3] |= 0x02;
+        break;
+      
+      case STAGE_INTEREST8 :
+        queue_cur->useful_byte[stage_cur_byte] |= 0x04;
+        break;
+
+      case STAGE_INTEREST16:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x04;
+        queue_cur->useful_byte[stage_cur_byte + 1] |= 0x04;
+        break;
+
+      case STAGE_INTEREST32:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x04;
+        queue_cur->useful_byte[stage_cur_byte + 1] |= 0x04;
+        queue_cur->useful_byte[stage_cur_byte + 2] |= 0x04;
+        queue_cur->useful_byte[stage_cur_byte + 3] |= 0x04;
+        break;
+
+      case STAGE_EXTRAS_UO:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x08;
+        break;
+      
+      case STAGE_EXTRAS_UI:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x10;
+        break;
+
+      case STAGE_EXTRAS_AO:
+        queue_cur->useful_byte[stage_cur_byte] |= 0x20;
+        break;
+
+      default: break;
+      }
+    }
+  }
+
+
+  /* 如果发现了新的edge, 则将新产生的edge的 new_edges 指针赋值 */
   if (pre_queued_discovered != queued_discovered) {
     find_new_edges(orig_virgin);
   }
-  
-  /* 0~0~0~0 */
 
   if (!(stage_cur % stats_update_freq) || stage_cur + 1 == stage_max)
     show_stats();
@@ -6532,7 +6619,7 @@ havoc_stage:
           /* Flip a single bit somewhere. Spooky! */
           /* 0~0~0~0 */
           ran_pos = UR(temp_len << 3);
-          if ( !(queue_cur->useful_byte[ran_pos >> 3] & 0x01) && UR(100) > 50) break; // 50% skip
+          if ( queue_cur->useful_byte[ran_pos >> 3] ) break; 
 
           FLIP_BIT(out_buf, ran_pos);
 
@@ -6545,7 +6632,7 @@ havoc_stage:
           /* Set byte to interesting value. */
           /* 0~0~0~0 */
           ran_pos = UR(temp_len);
-          if( !(queue_cur->useful_byte[temp_len] & 0x04) && UR(100) > 50) break; // 50% skip
+          if( queue_cur->useful_byte[temp_len] ) break; 
 
           out_buf[ran_pos] = interesting_8[UR(sizeof(interesting_8))];
 
@@ -6560,7 +6647,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x04) && !(queue_cur->useful_byte[ran_pos + 1] & 0x04) && UR(100) > 50) break; //50% skip
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break; //50% skip
 
           if (UR(2)) {
 
@@ -6583,7 +6670,7 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x04) && !(queue_cur->useful_byte[ran_pos + 1] & 0x04) && !(queue_cur->useful_byte[ran_pos + 2] & 0x04) && !(queue_cur->useful_byte[ran_pos + 3] & 0x04) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos]  || queue_cur->useful_byte[ran_pos + 1]  || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
 
           if (UR(2)) {
   
@@ -6603,7 +6690,7 @@ havoc_stage:
 
           /* Randomly subtract from byte. */
           ran_pos = UR(temp_len);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x02) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] ) break;
 
           out_buf[ran_pos] -= 1 + UR(ARITH_MAX);
           break;
@@ -6612,7 +6699,7 @@ havoc_stage:
 
           /* Randomly add to byte. */
           ran_pos = UR(temp_len);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x02) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] ) break;
 
           out_buf[ran_pos] += 1 + UR(ARITH_MAX);
           break;
@@ -6623,7 +6710,7 @@ havoc_stage:
 
           if (temp_len < 2) break;
           ran_pos = UR(temp_len - 1);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x02) && !(queue_cur->useful_byte[ran_pos + 1] & 0x02) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break;
 
           if (UR(2)) {
 
@@ -6650,7 +6737,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x02) && !(queue_cur->useful_byte[ran_pos + 1] & 0x02) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break;
 
           if (UR(2)) {
 
@@ -6677,7 +6764,7 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x02) && !(queue_cur->useful_byte[ran_pos + 1] & 0x02) && !(queue_cur->useful_byte[ran_pos + 2] & 0x02) && !(queue_cur->useful_byte[ran_pos + 3] & 0x02) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
 
           if (UR(2)) {
 
@@ -6704,7 +6791,7 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( !(queue_cur->useful_byte[ran_pos] & 0x02) && !(queue_cur->useful_byte[ran_pos + 1] & 0x02) && !(queue_cur->useful_byte[ran_pos + 2] & 0x02) && !(queue_cur->useful_byte[ran_pos + 3] & 0x02) && UR(100) > 50) break;
+          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
 
           if (UR(2)) {
 
@@ -6729,8 +6816,9 @@ havoc_stage:
           /* Just set a random byte to a random value. Because,
              why not. We use XOR with 1-255 to eliminate the
              possibility of a no-op. */
-
-          out_buf[UR(temp_len)] ^= 1 + UR(255);
+          ran_pos = UR(temp_len);
+          if ( queue_cur->useful_byte[ran_pos] ) break;
+          out_buf[UR(ran_pos)] ^= 1 + UR(255);
           break;       
         }
     }
