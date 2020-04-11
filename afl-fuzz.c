@@ -6740,7 +6740,7 @@ havoc_stage:
              possibility of a no-op. */
           ran_pos = UR(temp_len);
           if ( queue_cur->useful_byte[ran_pos] ) break;
-          out_buf[UR(ran_pos)] ^= 1 + UR(255);
+          out_buf[ran_pos] ^= 1 + UR(255);
           break;       
         }
     }
