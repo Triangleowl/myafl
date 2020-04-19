@@ -20,7 +20,7 @@
 
  */
 #define _LOG_
-#define MULTI_STAGE 2
+#define MULTI_STAGE 1
 #define AFL_MAIN
 #define MESSAGES_TO_STDOUT
 
