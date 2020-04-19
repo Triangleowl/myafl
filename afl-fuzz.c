@@ -4859,6 +4859,7 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
       tmp = queue_cur->new_edges;
       while (tmp) {
         if (!trace_bits[tmp->new_edge]) break;
+        fprintf(flog, "hahahahahhahahhahahah\n");
         tmp = tmp->next;
       }
     }
