@@ -4859,11 +4859,13 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
       tmp = queue_cur->new_edges;
       while (tmp) {
         if (!trace_bits[tmp->new_edge]) break;
-        fprintf(flog, "hahahahahhahahhahahah\n");
+        fprintf(flog, "ab");
         tmp = tmp->next;
       }
     }
-    if ( queue_cur && tmp == NULL ) {
+    
+    if ( queue_cur->new_edges && tmp ) {
+      fprintf(flog, "cd");
     switch(mutate_type) {
       case STAGE_FLIP1 :
       case STAGE_FLIP2 :
@@ -6544,7 +6546,7 @@ havoc_stage:
           /* 0~0~0~0 */
           ran_pos = UR(temp_len << 3);
           //if ( !(queue_cur->useful_byte[ran_pos >> 3] & 0x01) && UR(100) > 50) break; // 50% skip
-          if ( (queue_cur->useful_byte[ran_pos >> 3] & 0x01) != 0x01 ) break; // 50% skip
+          if ( (queue_cur->useful_byte[ran_pos >> 3] & 0x01) == 0x01 ) break; // 50% skip
 
           FLIP_BIT(out_buf, ran_pos);
 
@@ -6557,7 +6559,7 @@ havoc_stage:
           /* Set byte to interesting value. */
           /* 0~0~0~0 */
           ran_pos = UR(temp_len);
-          if( (queue_cur->useful_byte[temp_len] & 0x04) != 0x04 ) break; // 50% skip
+          if( (queue_cur->useful_byte[temp_len] & 0x04) == 0x04 ) break; // 50% skip
 
           out_buf[ran_pos] = interesting_8[UR(sizeof(interesting_8))];
 
@@ -6572,7 +6574,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( (queue_cur->useful_byte[temp_len] & 0x04) != 0x04 || (queue_cur->useful_byte[temp_len + 1] & 0x04) != 0x04 ) break; //50% skip
+          if( (queue_cur->useful_byte[temp_len] & 0x04) == 0x04 || (queue_cur->useful_byte[temp_len + 1] & 0x04) == 0x04 ) break; //50% skip
 
           if (UR(2)) {
 
@@ -6595,8 +6597,8 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( (queue_cur->useful_byte[temp_len] & 0x04) != 0x04 || (queue_cur->useful_byte[temp_len + 1] & 0x04) != 0x04
-            || (queue_cur->useful_byte[temp_len + 3] & 0x04) != 0x04 || (queue_cur->useful_byte[temp_len + 4] & 0x04) != 0x04 ) break;
+          if( (queue_cur->useful_byte[temp_len] & 0x04) == 0x04 || (queue_cur->useful_byte[temp_len + 1] & 0x04) == 0x04
+            || (queue_cur->useful_byte[temp_len + 3] & 0x04) == 0x04 || (queue_cur->useful_byte[temp_len + 4] & 0x04) == 0x04 ) break;
 
           if (UR(2)) {
   
@@ -6616,7 +6618,7 @@ havoc_stage:
 
           /* Randomly subtract from byte. */
           ran_pos = UR(temp_len);
-          if(  (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 ) break;
+          if(  (queue_cur->useful_byte[ran_pos] & 0x02) == 0x02 ) break;
 
           out_buf[ran_pos] -= 1 + UR(ARITH_MAX);
           break;
@@ -6625,7 +6627,7 @@ havoc_stage:
 
           /* Randomly add to byte. */
           ran_pos = UR(temp_len);
-          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) == 0x02 ) break;
 
           out_buf[ran_pos] += 1 + UR(ARITH_MAX);
           break;
@@ -6636,7 +6638,7 @@ havoc_stage:
 
           if (temp_len < 2) break;
           ran_pos = UR(temp_len - 1);
-          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02 ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) == 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) == 0x02 ) break;
 
           if (UR(2)) {
 
@@ -6663,7 +6665,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02 ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) == 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) == 0x02 ) break;
 
           if (UR(2)) {
 
@@ -6690,8 +6692,8 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02
-           || (queue_cur->useful_byte[ran_pos + 2] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 3] & 0x02) != 0x02 ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) == 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) == 0x02
+           || (queue_cur->useful_byte[ran_pos + 2] & 0x02) == 0x02 || (queue_cur->useful_byte[ran_pos + 3] & 0x02) == 0x02 ) break;
 
           if (UR(2)) {
 
@@ -6718,8 +6720,8 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02
-           || (queue_cur->useful_byte[ran_pos + 2] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 3] & 0x02) != 0x02 ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) == 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) == 0x02
+           || (queue_cur->useful_byte[ran_pos + 2] & 0x02) == 0x02 || (queue_cur->useful_byte[ran_pos + 3] & 0x02) == 0x02 ) break;
 
           if (UR(2)) {
 
