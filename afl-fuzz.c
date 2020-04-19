@@ -4856,16 +4856,18 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
   if (queue_cur->exec_cksum != cur_cksum) {
     struct new_edges *tmp = NULL;
     if (queue_cur->new_edges) {
+      //fprintf(flog, "this is in bulabula...%s\n", queue_cur->fname);
       tmp = queue_cur->new_edges;
       while (tmp) {
+        //fprintf(flog, "~~ab");
         if (!trace_bits[tmp->new_edge]) break;
-        fprintf(flog, "ab");
+        //fprintf(flog, "!!cd");
         tmp = tmp->next;
       }
     }
     
     if ( queue_cur->new_edges && tmp ) {
-      fprintf(flog, "cd");
+      //fprintf(flog, "@@ef");
     switch(mutate_type) {
       case STAGE_FLIP1 :
       case STAGE_FLIP2 :
@@ -6465,14 +6467,6 @@ skip_user_extras:
   stage_finds[STAGE_EXTRAS_AO]  += new_hit_cnt - orig_hit_cnt;
   stage_cycles[STAGE_EXTRAS_AO] += stage_max;
 
-/* 0~0~0~0 */
-  int index;
-  for(index = 0; index < queue_cur->len; index++) {
-    if(queue_cur->useful_byte[index])
-      queue_cur->byte_socre++;
-  }
-/* 0~0~0~0 */
-
 skip_extras:
 
   /* If we made this to here without jumping to havoc_stage or abandon_entry,
@@ -6482,6 +6476,10 @@ skip_extras:
   if (!queue_cur->passed_det) mark_as_det_done(queue_cur);
   /* 0~0~0~0 */
   log_useful_byte(queue_cur);
+  for(int index = 0; index < queue_cur->len; index++) {
+    if(queue_cur->useful_byte[index] != 0)
+      queue_cur->byte_socre++;
+  }
   /* 0~0~0~0 */
 
   /****************
@@ -8575,7 +8573,7 @@ int main(int argc, char** argv) {
 
 #ifdef _LOG_
   if(!skipped_fuzz) {
-    fprintf(flog, "%s fuzzed!\n", queue_cur->fname);
+    fprintf(flog, "\n%s fuzzed!\n", queue_cur->fname);
     fprintf(flog, "pending favored: %d, cur->favored: %d, fuzzed count: %d\n", pending_favored, queue_cur->favored, ++fuzzed_count);
     fprintf(flog, "fuzz time: %llds, len: %d, byte socre: %d, ratio: %f\n",(get_cur_time() - befor_fuzz_time) / 1000, queue_cur->len, queue_cur->byte_socre, (double)queue_cur->byte_socre/queue_cur->len);
     struct new_edges *tmp = queue_cur->new_edges;
