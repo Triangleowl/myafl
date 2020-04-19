@@ -4527,7 +4527,7 @@ static u8 new_edge_trim_case(char** argv, struct queue_entry* q, u8* in_buf) {
 
   stage_name = tmp;
   bytes_trim_in += q->len;
-
+  u32 orig_len = q->len;
   fprintf(flog, "~~~~~ new_edge_trim_case! ~~~~~\n");
 
 
@@ -4552,8 +4552,7 @@ static u8 new_edge_trim_case(char** argv, struct queue_entry* q, u8* in_buf) {
     while (remove_pos < q->len) {
 
       u32 trim_avail = MIN(remove_len, q->len - remove_pos);
-      /* ～～～每次循环结束之后要重新对tmp_edge赋值， 否则tmp_edge的值在第一次循环结束就已经成了nullptr ～～～ */
-      tmp_edge = q->new_edges;
+
 
       write_with_gap(in_buf, q->len, remove_pos, trim_avail);
 
@@ -4570,15 +4569,17 @@ static u8 new_edge_trim_case(char** argv, struct queue_entry* q, u8* in_buf) {
          isn't perfect for variable-path inputs, but we're just making a
          best-effort pass, so it's not a big deal if we end up with false
          negatives every now and then. */
-      int trim_ok = 1;
+      int trim_ok = 0;
+      /* ～～～每次循环结束之后要重新对tmp_edge赋值， 否则tmp_edge的值在第一次循环结束就已经成了nullptr ～～～ */
+      tmp_edge = q->new_edges;
       while (tmp_edge) {
         if (!trace_bits[tmp_edge->new_edge]) {
           remove_pos += remove_len;
-          trim_ok = 0;
           break;
         }
         tmp_edge = tmp_edge->next;
       }
+      if (q->new_edges && tmp_edge == NULL) trim_ok = 1;
 
       if (trim_ok) {
         u32 move_tail = q->len - remove_pos - trim_avail;
@@ -4630,7 +4631,7 @@ static u8 new_edge_trim_case(char** argv, struct queue_entry* q, u8* in_buf) {
 
     memcpy(trace_bits, clean_trace, MAP_SIZE);
     update_bitmap_score(q);
-
+    fprintf(flog, "orig len: %u, aflter new trim, len: %u\n", orig_len, q->len);
   }
 
 abort_trimming:
@@ -4858,9 +4859,10 @@ EXP_ST u8 det_common_fuzz_stuff(char** argv, u8* out_buf, u32 len, int mutate_ty
       tmp = queue_cur->new_edges;
       while (tmp) {
         if (!trace_bits[tmp->new_edge]) break;
+        tmp = tmp->next;
       }
     }
-      if ( queue_cur && tmp == NULL ) {
+    if ( queue_cur && tmp == NULL ) {
     switch(mutate_type) {
       case STAGE_FLIP1 :
       case STAGE_FLIP2 :
@@ -6541,7 +6543,7 @@ havoc_stage:
           /* 0~0~0~0 */
           ran_pos = UR(temp_len << 3);
           //if ( !(queue_cur->useful_byte[ran_pos >> 3] & 0x01) && UR(100) > 50) break; // 50% skip
-          if ( queue_cur->useful_byte[ran_pos >> 3] ) break; // 50% skip
+          if ( (queue_cur->useful_byte[ran_pos >> 3] & 0x01) != 0x01 ) break; // 50% skip
 
           FLIP_BIT(out_buf, ran_pos);
 
@@ -6554,7 +6556,7 @@ havoc_stage:
           /* Set byte to interesting value. */
           /* 0~0~0~0 */
           ran_pos = UR(temp_len);
-          if( queue_cur->useful_byte[temp_len] ) break; // 50% skip
+          if( (queue_cur->useful_byte[temp_len] & 0x04) != 0x04 ) break; // 50% skip
 
           out_buf[ran_pos] = interesting_8[UR(sizeof(interesting_8))];
 
@@ -6569,7 +6571,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( queue_cur->useful_byte[ran_pos] || (queue_cur->useful_byte[ran_pos + 1]) ) break; //50% skip
+          if( (queue_cur->useful_byte[temp_len] & 0x04) != 0x04 || (queue_cur->useful_byte[temp_len + 1] & 0x04) != 0x04 ) break; //50% skip
 
           if (UR(2)) {
 
@@ -6592,7 +6594,8 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
+          if( (queue_cur->useful_byte[temp_len] & 0x04) != 0x04 || (queue_cur->useful_byte[temp_len + 1] & 0x04) != 0x04
+            || (queue_cur->useful_byte[temp_len + 3] & 0x04) != 0x04 || (queue_cur->useful_byte[temp_len + 4] & 0x04) != 0x04 ) break;
 
           if (UR(2)) {
   
@@ -6612,7 +6615,7 @@ havoc_stage:
 
           /* Randomly subtract from byte. */
           ran_pos = UR(temp_len);
-          if(  queue_cur->useful_byte[ran_pos] ) break;
+          if(  (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 ) break;
 
           out_buf[ran_pos] -= 1 + UR(ARITH_MAX);
           break;
@@ -6621,7 +6624,7 @@ havoc_stage:
 
           /* Randomly add to byte. */
           ran_pos = UR(temp_len);
-          if( queue_cur->useful_byte[ran_pos] ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 ) break;
 
           out_buf[ran_pos] += 1 + UR(ARITH_MAX);
           break;
@@ -6632,7 +6635,7 @@ havoc_stage:
 
           if (temp_len < 2) break;
           ran_pos = UR(temp_len - 1);
-          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02 ) break;
 
           if (UR(2)) {
 
@@ -6659,7 +6662,7 @@ havoc_stage:
           if (temp_len < 2) break;
 
           ran_pos = UR(temp_len - 1);
-          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02 ) break;
 
           if (UR(2)) {
 
@@ -6686,7 +6689,8 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02
+           || (queue_cur->useful_byte[ran_pos + 2] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 3] & 0x02) != 0x02 ) break;
 
           if (UR(2)) {
 
@@ -6713,7 +6717,8 @@ havoc_stage:
           if (temp_len < 4) break;
 
           ran_pos = UR(temp_len - 3);
-          if( queue_cur->useful_byte[ran_pos] || queue_cur->useful_byte[ran_pos + 1] || queue_cur->useful_byte[ran_pos + 2] || queue_cur->useful_byte[ran_pos + 3] ) break;
+          if( (queue_cur->useful_byte[ran_pos] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 1] & 0x02) != 0x02
+           || (queue_cur->useful_byte[ran_pos + 2] & 0x02) != 0x02 || (queue_cur->useful_byte[ran_pos + 3] & 0x02) != 0x02 ) break;
 
           if (UR(2)) {
 
